@@ -25,10 +25,9 @@ public class Server_main {
 				
 				Socket socket = server.ss.accept(); //client connect
 				LocalTime cnt_time = LocalTime.now(); //check connected time
-				System.out.println("Connected");
+				System.out.println("Connected - "+socket.getInetAddress()); //Connected client IP
 				Client_struct client = new Client_struct(socket, server.clients, cnt_time, server.clients.size()); //create client thread
 				server.clients.add(client); //add client object in client list
-//				System.out.println(server.clients);
 				client.start();
 			}
 

@@ -32,12 +32,12 @@ public class Client_struct extends Thread{
 			boolean Quit = false;
 			while(!Quit) {
 				String msg = dis.readUTF(); //Data read
-				String[] value_sttNum_array= {"300","Error"};
+				String[] value_sttNum_array= {"",""};
 				String[] slice_msg = msg.split("///");
-				System.out.println("Server's receive message - "+msg);
+				System.out.println("Server's receive message - "+msg); //message form check
 				if(slice_msg[0].equals("Request") && slice_msg.length==5) { //message type & message form check
 					
-					LocalTime now_Server_Time = LocalTime.now();
+					LocalTime now_Server_Time = LocalTime.now(); //get server's real time
 					
 					if(slice_msg[1].equals("Hi")) { //command "Hi"
 //						System.out.println(slice_msg);
@@ -60,18 +60,25 @@ public class Client_struct extends Thread{
 						value_sttNum_array = Server_Quit();
 						Quit=true;
 					}else {
+						value_sttNum_array = Server_Error();
 					}
 					
 					dos.writeUTF("Response"+"///"
 							+value_sttNum_array[0]+"///"
 							+value_sttNum_array[1]+"///"
-							+"END_MSG");
+							+"END_MSG"); //message form
+					
+					System.out.println("Server's send message - "+"Response"+"///"
+							+value_sttNum_array[0]+"///"
+							+value_sttNum_array[1]+"///"
+							+"END_MSG"); //message form check
 				}
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.out.println("Server >>> 입출력 예외 발생");
 		}
 	}
+	
 	public String[] Server_Hi(String CID) { //Hi
 		
 		String[] msg = {"",""};
@@ -85,18 +92,18 @@ public class Client_struct extends Thread{
 		
 		String[] msg = {"",""};
 		msg[0] = "130";
-		Duration duration = Duration.between(cnt_time, now_Server_Time);
-		int current_hour = (int) duration.getSeconds()/3600;
-		int current_minute = (int) duration.getSeconds()%3600/60;
-		int current_second = (int) duration.getSeconds()%3600%60;
-		msg[1] = current_hour+"시간 "+current_minute+"분 "+current_second+"초 동안 연결중입니다.";
+		msg[1] = ("서버 시간은 "+now_Server_Time.getHour()+"시 "+now_Server_Time.getMinute()+"분 "+now_Server_Time.getSecond()+"초 입니다.");
 		return msg;
 	}
 	
 	public String[] Server_ConnectionTime(LocalTime now_Server_Time) { //ConnectionTime
 		String[] msg = {"",""};
 		msg[0] = "150";
-		msg[1] = ("서버 시간은 "+now_Server_Time.getHour()+"시 "+now_Server_Time.getMinute()+"분 "+now_Server_Time.getSecond()+"초 입니다.");
+		Duration duration = Duration.between(cnt_time, now_Server_Time); //Server real time - Client connected time
+		int current_hour = (int) duration.getSeconds()/3600; //hour
+		int current_minute = (int) duration.getSeconds()%3600/60; //minute
+		int current_second = (int) duration.getSeconds()%3600%60; //second
+		msg[1] = current_hour+"시간 "+current_minute+"분 "+current_second+"초 동안 연결중입니다.";
 		return msg;
 	}
 	
@@ -115,18 +122,18 @@ public class Client_struct extends Thread{
 	public String[] Server_Quit() { //Quit
 		String[] msg = {"",""};
 		msg[0] = "250";
-		msg[1] = CID;
+		msg[1] = "Bye "+CID;
 		client_remove();
 		return msg;
 	}
 	
-	public void client_remove() {
+	public void client_remove() { //해당 클라이언트 삭제
 		
 		for (int i=0;i<clients.size();i++) {
 		
 			int clients_id = clients.get(i).client_id;
 			if(clients_id > client_id) { //해당 client_id보다 높은 값들 찾기
-				clients.get(i).client_id_set();
+				clients.get(i).client_id_set(); //높은경우 pop이후에 index조정이 필요하므로 값 변경
 			}
 		}
 		clients.remove(client_id);
@@ -134,5 +141,12 @@ public class Client_struct extends Thread{
 	
 	public void client_id_set() { //remove하게될 경우 해당 client_id보다 높은 값들 -1
 		this.client_id = --client_id;
+	}
+	
+	public String[] Server_Error() {
+		String[] msg = {"",""};
+		msg[0] = "300";
+		msg[1] = "Command Error";
+		return msg;
 	}
 }

@@ -17,14 +17,19 @@ public class Client_receive extends Thread{
 		DataInputStream din;
 		try {
 			din = new DataInputStream(socket.getInputStream());
-			
-			while(true) {
-				String msg = din.readUTF();
-//				System.out.println("Client's receive message - "+msg);
-				System.out.println(msg.split("///")[2]);
+			boolean Quit = false;
+			while(!Quit) {
+				String msg = din.readUTF(); //Response message
+				System.out.println("Client's receive message - "+msg); //message form check
+				System.out.println("Server >>> "+msg.split("///")[2]);
+				if(msg.split("///")[1].equals("250")) { ///정상적으로 Quit된 경우
+					Quit = true; //Thread while terminate
+				}
+					
+					
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.out.println("Client >>> 입력 예외 발생");
 		}
 		
 		
