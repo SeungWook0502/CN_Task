@@ -23,7 +23,7 @@ public class Client_main {
 				client.client_socket = new Socket(/*"210.119.32.221"*/"localhost",55555);
 				System.out.println("Connected Server");
 				
-				System.out.println("Command >>> <Hi> <CurrentTime> <ConnectionTime> <ClientList> <Quit>");
+				System.out.println("Command >>> <Hi> <CurrentTime> <ConnectionTime> <ClientList> <Quit> <?>");
 			
 				Client_receive client_receiver = new Client_receive(client.client_socket);
 				Client_send client_sender = new Client_send(client.client_socket, CID);

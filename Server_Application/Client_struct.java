@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Base64;
 
 public class Client_struct extends Thread{
 	Socket socket;	//Socket Object
@@ -31,10 +32,13 @@ public class Client_struct extends Thread{
 			DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
 			boolean Quit = false;
 			while(!Quit) {
-				String msg = dis.readUTF(); //Data read
+				String Request_msg = dis.readUTF(); //Data read
 				String[] value_sttNum_array= {"",""};
-				String[] slice_msg = msg.split("///");
-				System.out.println("Server's receive message - "+msg); //message form check
+				System.out.println("Base64 Response message - "+Request_msg); //Base64 Request message check
+				byte[] Base64_msg = Base64.getDecoder().decode(Request_msg);
+				Request_msg = new String(Base64_msg);
+				String[] slice_msg = Request_msg.split("///");
+				System.out.println("Server's receive message - "+Request_msg); //message form check
 				if(slice_msg[0].equals("Request") && slice_msg.length==5) { //message type & message form check
 					
 					LocalTime now_Server_Time = LocalTime.now(); //get server's real time
@@ -63,15 +67,13 @@ public class Client_struct extends Thread{
 						value_sttNum_array = Server_Error();
 					}
 					
-					dos.writeUTF("Response"+"///"
+					String Response_msg = "Response"+"///"
 							+value_sttNum_array[0]+"///"
 							+value_sttNum_array[1]+"///"
-							+"END_MSG"); //message form
-					
-					System.out.println("Server's send message - "+"Response"+"///"
-							+value_sttNum_array[0]+"///"
-							+value_sttNum_array[1]+"///"
-							+"END_MSG"); //message form check
+							+"END_MSG"; //message form
+					System.out.println("Server's send message - "+Response_msg); //message form check
+					System.out.println("Base64 Response message - "+Base64.getEncoder().encodeToString(Response_msg.getBytes())); //Base64 Response message check
+					dos.writeUTF(Base64.getEncoder().encodeToString(Response_msg.getBytes())); //String to byte //Base64Encoding //Send Request message
 				}
 			}
 		} catch (IOException e) {
@@ -81,50 +83,49 @@ public class Client_struct extends Thread{
 	
 	public String[] Server_Hi(String CID) { //Hi
 		
-		String[] msg = {"",""};
+		String[] Response_msg = {"",""};
 		this.CID = CID;
-		msg[0] = "100";
-		msg[1] = "Hi "+CID;
-		return msg;
+		Response_msg[0] = "100";
+		Response_msg[1] = "Hi "+CID;
+		return Response_msg;
 	}
 	
 	public String[] Server_CurrentTime(LocalTime now_Server_Time) { //CurrentTime
 		
-		String[] msg = {"",""};
-		msg[0] = "130";
-		msg[1] = ("서버 시간은 "+now_Server_Time.getHour()+"시 "+now_Server_Time.getMinute()+"분 "+now_Server_Time.getSecond()+"초 입니다.");
-		return msg;
+		String[] Response_msg = {"",""};
+		Response_msg[0] = "130";
+		Response_msg[1] = ("서버 시간은 "+now_Server_Time.getHour()+"시 "+now_Server_Time.getMinute()+"분 "+now_Server_Time.getSecond()+"초 입니다.");
+		return Response_msg;
 	}
 	
 	public String[] Server_ConnectionTime(LocalTime now_Server_Time) { //ConnectionTime
-		String[] msg = {"",""};
-		msg[0] = "150";
+		String[] Response_msg = {"",""};
+		Response_msg[0] = "150";
 		Duration duration = Duration.between(cnt_time, now_Server_Time); //Server real time - Client connected time
 		int current_hour = (int) duration.getSeconds()/3600; //hour
 		int current_minute = (int) duration.getSeconds()%3600/60; //minute
 		int current_second = (int) duration.getSeconds()%3600%60; //second
-		msg[1] = current_hour+"시간 "+current_minute+"분 "+current_second+"초 동안 연결중입니다.";
-		return msg;
+		Response_msg[1] = current_hour+"시간 "+current_minute+"분 "+current_second+"초 동안 연결중입니다.";
+		return Response_msg;
 	}
 	
 	public String[] Server_ClientList() { //ClientList
-		String[] msg = {"",""};
-		msg[0] = "200";
+		String[] Response_msg = {"",""};
+		Response_msg[0] = "200";
 		for (int i=0;i<clients.size();i++) {
 			String clients_CID = clients.get(i).CID; //CID
 			String clients_IP = clients.get(i).socket.getLocalAddress().toString(); //IP
-			msg[1] = msg[1]+clients_CID + clients_IP+"\n"; //CID+IP
+			Response_msg[1] = Response_msg[1]+clients_CID + clients_IP+"\n"; //CID+IP
 		}
-		
-		return msg;
+		return Response_msg;
 	}
 	
 	public String[] Server_Quit() { //Quit
-		String[] msg = {"",""};
-		msg[0] = "250";
-		msg[1] = "Bye "+CID;
+		String[] Response_msg = {"",""};
+		Response_msg[0] = "250";
+		Response_msg[1] = "Bye "+CID;
 		client_remove();
-		return msg;
+		return Response_msg;
 	}
 	
 	public void client_remove() { //해당 클라이언트 삭제
@@ -144,9 +145,9 @@ public class Client_struct extends Thread{
 	}
 	
 	public String[] Server_Error() {
-		String[] msg = {"",""};
-		msg[0] = "300";
-		msg[1] = "Command Error";
-		return msg;
+		String[] Response_msg = {"",""};
+		Response_msg[0] = "300";
+		Response_msg[1] = "Command Error";
+		return Response_msg;
 	}
 }
