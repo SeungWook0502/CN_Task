@@ -34,7 +34,8 @@ public class Client_struct extends Thread{
 			while(!Quit) {
 				String Request_msg = dis.readUTF(); //Data read
 				String[] value_sttNum_array= {"",""};
-				System.out.println("Base64 Response message - "+Request_msg); //Base64 Request message check
+				System.out.println("=============================================================");
+				System.out.println("Base64 Request message - "+Request_msg); //Base64 Request message check
 				byte[] Base64_msg = Base64.getDecoder().decode(Request_msg);
 				Request_msg = new String(Base64_msg);
 				String[] slice_msg = Request_msg.split("///");
