@@ -6,6 +6,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Scanner;
+import Base64_Application.Base64_Encoder;
 
 public class Client_send extends Thread{
 	Socket socket = null;
@@ -64,7 +65,8 @@ public class Client_send extends Thread{
 					; //Message form
 			System.out.println("Client's send message - "+Request_msg); //message form check
 			
-			dos.writeUTF(Base64_Encoding(Request_msg)); //String to byte //Base64Encoding //Send Request message
+			Base64_Encoder base64_Encoder = new Base64_Encoder();
+			dos.writeUTF(base64_Encoder.Base64_Encoding(Request_msg)); //String to byte //Base64Encoding //Send Request message
 			System.out.println("Base64 Request Message - "+Base64.getEncoder().encodeToString(Request_msg.getBytes())+"\n============================================================="); //Base64 Request message check
 		}catch(IOException e) {
 			System.out.println("Client >>> 출력 예외 발생");
@@ -77,53 +79,5 @@ public class Client_send extends Thread{
 		System.out.println("ConnectionTime  =>  메시지를 보내고 있는 이 클라이언트와의 TCP 연결 유지 시간을 요청");
 		System.out.println("ClientList  =>  현재 서버에 연결된 모든 클라이언트의 IP주소와 CID를 요청");
 		System.out.println("Quit  =>  서버와의 연결을 종료하기를 요청");
-	}
-	public String Base64_Encoding(String String_msg) {
-		//String to ASCII variable
-		ArrayList<Integer> ASCII_Value_List = new ArrayList<Integer>();
-		String binary_string = ""; //ASCII binary sum
-		byte[] msg_byte= String_msg.getBytes();
-		//ASCII to Base64 variable
-		char[] Base64_Table = {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'};
-		String Base64_Value_List = "";
-		int null_count = 0;
-		
-		for(int i=0; i<msg_byte.length; i++) { //get ASCII Value
-			int ASCII_Value = msg_byte[i];
-			ASCII_Value_List.add(ASCII_Value);
-		}
-		
-		for(int i=0; i<ASCII_Value_List.size();i++) { //get ASCII table value
-			String ASCII_Value = Integer.toBinaryString(ASCII_Value_List.get(i));
-			for(int j=0; ASCII_Value.length()<8;j++) {
-				ASCII_Value='0'+ASCII_Value;
-			}
-			binary_string=binary_string+ASCII_Value;
-		}
-			
-		///////
-		
-		for(int i=0; i<binary_string.length(); i=i+6) {
-			String Base64_Binary = "";
-			null_count = 0;
-			for(int j=0; j<6; j++) {
-				char binary_byte;
-				try {
-				binary_byte = binary_string.charAt(i+j);
-				}catch(StringIndexOutOfBoundsException e) {
-					binary_byte = '0';
-					null_count++;
-				}
-				
-				Base64_Binary += binary_byte;
-			}
-			char Base64_Value = Base64_Table[Integer.parseInt(Base64_Binary,2)];
-			Base64_Value_List+=Base64_Value;
-		}
-		for(int i=0; i<null_count/2; i++) {
-			Base64_Value_List+="=";
-		}
-		
-		return Base64_Value_List;
 	}
 }
