@@ -8,7 +8,7 @@ import java.net.Socket;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Base64;
+import Base64_Application.*;
 
 public class Client_struct extends Thread{
 	Socket socket;	//Socket Object
@@ -36,8 +36,8 @@ public class Client_struct extends Thread{
 				String[] value_sttNum_array= {"",""};
 				System.out.println("=============================================================");
 				System.out.println("Base64 Request message - "+Request_msg); //Base64 Request message check
-				byte[] Base64_msg = Base64.getDecoder().decode(Request_msg);
-				Request_msg = new String(Base64_msg);
+				Base64_Decoder base64_Decoder = new Base64_Decoder();
+				Request_msg = base64_Decoder.Base64_Decoding(Request_msg);
 				String[] slice_msg = Request_msg.split("///");
 				System.out.println("Server's receive message - "+Request_msg); //message form check
 				if(slice_msg[0].equals("Request") && slice_msg.length==5) { //message type & message form check
@@ -73,8 +73,9 @@ public class Client_struct extends Thread{
 							+value_sttNum_array[1]+"///"
 							+"END_MSG"; //message form
 					System.out.println("Server's send message - "+Response_msg); //message form check
-					System.out.println("Base64 Response message - "+Base64.getEncoder().encodeToString(Response_msg.getBytes())); //Base64 Response message check
-					dos.writeUTF(Base64.getEncoder().encodeToString(Response_msg.getBytes())); //String to byte //Base64Encoding //Send Request message
+					Base64_Encoder base64_Encoder = new Base64_Encoder();
+					System.out.println("Base64 Response message - "+base64_Encoder.Base64_Encoding(Response_msg)); //Base64 Response message check
+					dos.writeUTF(base64_Encoder.Base64_Encoding(Response_msg)); //String to byte //Base64Encoding //Send Request message
 				}
 			}
 		} catch (IOException e) {
