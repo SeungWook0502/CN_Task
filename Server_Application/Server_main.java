@@ -25,17 +25,16 @@ public class Server_main {
 				
 				Socket socket = server.ss.accept(); //client connect
 				LocalTime cnt_time = LocalTime.now(); //check connected time
-				System.out.println("Connected - "+socket.getInetAddress()); //Connected client IP
+				System.out.println("Client Connected >>> "+socket.getInetAddress()); //Connected client IP
 				Client_struct client = new Client_struct(socket, server.clients, cnt_time, server.clients.size()); //create client thread
 				server.clients.add(client); //add client object in client list
 				client.start();
 			}
-
 		
 		}catch(SocketException e) {
 			System.out.println("Server >>> 소켓 관련 예외 발생, 서버종료");
 		}catch(IOException e) {
-			System.out.println("Server >>> 입출력 예외 발생");
+			System.out.println("Server main >>> 입출력 예외 발생");
 		}
 	}
 

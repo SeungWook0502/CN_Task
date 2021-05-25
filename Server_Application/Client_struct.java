@@ -3,12 +3,16 @@ package Server_Application;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import Base64_Application.*;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import Base64_Application.Base64_Decoder;
+import Base64_Application.Base64_Encoder;
+import Loss_Simulator.Loss_Simulator_Object;
 
 public class Client_struct extends Thread{
 	Socket socket;	//Socket Object
@@ -16,6 +20,7 @@ public class Client_struct extends Thread{
 	String CID;		//CID
 	ArrayList<Client_struct> clients;
 	int client_id;
+	static boolean Quit;
 	
 	
 	public Client_struct(Socket socket,ArrayList<Client_struct> clients, LocalTime cnt_time, int client_id) {
@@ -23,6 +28,7 @@ public class Client_struct extends Thread{
 		this.socket = socket;
 		this.clients = clients;
 		this.cnt_time = cnt_time;
+		this.Quit = false;
 	}
 	
 	public void run() {
@@ -30,57 +36,81 @@ public class Client_struct extends Thread{
 		try {
 			DataInputStream dis = new DataInputStream(socket.getInputStream());
 			DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-			boolean Quit = false;
-			while(!Quit) {
+			while(!this.Quit) {
 				String Request_msg = dis.readUTF(); //Data read
-				String[] value_sttNum_array= {"",""};
-				System.out.println("=============================================================");
-				System.out.println("Base64 Request message - "+Request_msg); //Base64 Request message check
+//				System.out.println("=============================================================");
+//				System.out.println("Base64 Request message - "+Request_msg); //Base64 Request message check
+				Base64_Encoder base64_Encoder = new Base64_Encoder();
 				Base64_Decoder base64_Decoder = new Base64_Decoder();
 				Request_msg = base64_Decoder.Base64_Decoding(Request_msg);
+				
 				String[] slice_msg = Request_msg.split("///");
-				System.out.println("Server's receive message - "+Request_msg); //message form check
+//				System.out.println("Server's receive message - "+Request_msg); //message form check
 				if(slice_msg[0].equals("Request") && slice_msg.length==5) { //message type & message form check
+					
+					Loss_Simulator_Object lso = new Loss_Simulator_Object();
+					Server_ACK(dos,base64_Encoder, lso, slice_msg[3].split("Num_Req")[1]); //send ACK
 					
 					LocalTime now_Server_Time = LocalTime.now(); //get server's real time
 					
 					if(slice_msg[1].equals("Hi")) { //command "Hi"
-//						System.out.println(slice_msg);
-						value_sttNum_array = Server_Hi(slice_msg[2].split(":")[1]);
 						
+						send_response_msg(dos, base64_Encoder, lso, Server_Hi(slice_msg[2].split(":")[1]));
 					}else if(slice_msg[1].equals("CurrentTime")) { //command "CurrentTime"
 						
-						value_sttNum_array = Server_CurrentTime(now_Server_Time);
-						
+						send_response_msg(dos, base64_Encoder, lso, Server_CurrentTime(now_Server_Time));
 					}else if(slice_msg[1].equals("ConnectionTime")) { //command "ConnectionTime"
 						
-						value_sttNum_array = Server_ConnectionTime(now_Server_Time);
-						
+						send_response_msg(dos, base64_Encoder, lso, Server_ConnectionTime(now_Server_Time));
 					}else if(slice_msg[1].equals("ClientList")) { //command "ClientList"
 						
-						value_sttNum_array = Server_ClientList();
-						
+						send_response_msg(dos, base64_Encoder, lso, Server_ClientList());
 					}else if(slice_msg[1].equals("Quit")) { //command "Quit"
 						
-						value_sttNum_array = Server_Quit();
-						Quit=true;
+						send_response_msg(dos, base64_Encoder, lso, Server_Quit());
+						new Thread() { //Client와 Server의 독립적인 Clients 관리를 해결
+							public void run() { //Timeout Interval 이후에 오지 않은경우(Client에서 값을 받아서 Quit이 이루어진 경우)에 Server에서도 Quit을 진행
+								
+								LocalTime Send_Time = LocalTime.now();
+								boolean client_terminate = true;
+								while(client_terminate) {
+									LocalTime Now_Time = LocalTime.now();
+									Duration Interval = Duration.between(Send_Time, Now_Time);
+									if(Interval.getNano() > 1000000000) { //Timeout Interval 0.5 second
+										client_terminate = false;
+										client_remove();
+									}
+								}
+							}
+						}.start();
 					}else {
-						value_sttNum_array = Server_Error();
+						send_response_msg(dos, base64_Encoder, lso, Server_Error());
 					}
-					
-					String Response_msg = "Response"+"///"
-							+value_sttNum_array[0]+"///"
-							+value_sttNum_array[1]+"///"
-							+"END_MSG"; //message form
-					System.out.println("Server's send message - "+Response_msg); //message form check
-					Base64_Encoder base64_Encoder = new Base64_Encoder();
-					System.out.println("Base64 Response message - "+base64_Encoder.Base64_Encoding(Response_msg)); //Base64 Response message check
-					dos.writeUTF(base64_Encoder.Base64_Encoding(Response_msg)); //String to byte //Base64Encoding //Send Request message
 				}
 			}
 		} catch (IOException e) {
-			System.out.println("Server >>> 입출력 예외 발생");
+			System.out.println("Client Quit >>> "+socket.getInetAddress());
 		}
+	}
+	
+	public void send_response_msg(DataOutputStream dos, Base64_Encoder base64_Encoder,Loss_Simulator_Object lso, String[] value_sttNum_array) {
+
+		String Response_msg = "Response"+"///"
+				+value_sttNum_array[0]+"///"
+				+value_sttNum_array[1]+"///"
+				+"END_MSG"; //message form
+		
+		lso.loss_send(dos,base64_Encoder.Base64_Encoding(Response_msg)); //String to byte //Base64Encoding //Send Request message
+	}
+	
+	public void Server_ACK(DataOutputStream dos, Base64_Encoder base64_Encoder, Loss_Simulator_Object lso, String Num_Req) { //ACK
+		
+		String ACK_msg = "ACK"+"///"
+				+"Num_ACK"+Num_Req+"///"
+				+"END_MSG";
+		
+//		System.out.println("Server's ACK Message - "+ACK_msg); //Server ACK message check
+		lso.loss_send(dos, base64_Encoder.Base64_Encoding(ACK_msg));
 	}
 	
 	public String[] Server_Hi(String CID) { //Hi
@@ -126,7 +156,6 @@ public class Client_struct extends Thread{
 		String[] Response_msg = {"",""};
 		Response_msg[0] = "250";
 		Response_msg[1] = "Bye "+CID;
-		client_remove();
 		return Response_msg;
 	}
 	
@@ -139,7 +168,9 @@ public class Client_struct extends Thread{
 				clients.get(i).client_id_set(); //높은경우 pop이후에 index조정이 필요하므로 값 변경
 			}
 		}
+		System.out.println(clients.size());
 		clients.remove(client_id);
+		this.Quit = true;
 	}
 	
 	public void client_id_set() { //remove하게될 경우 해당 client_id보다 높은 값들 -1

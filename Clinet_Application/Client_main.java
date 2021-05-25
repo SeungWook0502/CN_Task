@@ -9,6 +9,10 @@ import java.util.Scanner;
 public class Client_main {
 
 	Socket client_socket = null;
+//	static LocalTime Timer;
+	static boolean Quit = false; //Client loop
+	static boolean Receive_ACK = false; //Receive ACK
+	static boolean Receive_Response = false; //Receive response
 	
 	public static void main(String[] args) {
 
