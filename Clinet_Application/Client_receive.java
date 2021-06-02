@@ -42,9 +42,17 @@ public class Client_receive extends Thread{
 					
 //					System.out.println("Response OK"); //message form check
 					Client_main.Receive_Response = true;
-					System.out.println("Server >>> "+Response_msg.split("///")[2]);
-					if(Response_msg.split("///")[1].equals("250")) { ///Receive Quit message
+					if(Response_msg.split("///")[1].equals("200")) { ///Receive Quit message
+						for(int Client_Count = 0;Client_Count<Response_msg.split("///")[2].split("\n").length;Client_Count++) {
+							System.out.println("Server >>> "+Response_msg.split("///")[2].split("\n")[Client_Count]);
+						}
+					}
+					else if(Response_msg.split("///")[1].equals("250")) { ///Receive Quit message
+						System.out.println("Server >>> "+Response_msg.split("///")[2]);
 						Client_main.Quit = true; //Thread while terminate
+					}
+					else {
+						System.out.println("Server >>> "+Response_msg.split("///")[2]);
 					}
 				}
 			}

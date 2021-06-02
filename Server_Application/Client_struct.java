@@ -2,8 +2,10 @@ package Server_Application;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -20,7 +22,6 @@ public class Client_struct extends Thread{
 	String CID;		//CID
 	ArrayList<Client_struct> clients;
 	int client_id;
-	static boolean Quit;
 	
 	
 	public Client_struct(Socket socket,ArrayList<Client_struct> clients, LocalTime cnt_time, int client_id) {
@@ -28,7 +29,6 @@ public class Client_struct extends Thread{
 		this.socket = socket;
 		this.clients = clients;
 		this.cnt_time = cnt_time;
-		this.Quit = false;
 	}
 	
 	public void run() {
@@ -36,8 +36,14 @@ public class Client_struct extends Thread{
 		try {
 			DataInputStream dis = new DataInputStream(socket.getInputStream());
 			DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-			while(!this.Quit) {
-				String Request_msg = dis.readUTF(); //Data read
+			while(true) {
+				String Request_msg="";
+				try {
+					Request_msg = dis.readUTF(); //Data read
+				}catch (EOFException eof) { //Quit Client
+					client_remove();
+					break;
+				}
 //				System.out.println("=============================================================");
 //				System.out.println("Base64 Request message - "+Request_msg); //Base64 Request message check
 				Base64_Encoder base64_Encoder = new Base64_Encoder();
@@ -66,29 +72,15 @@ public class Client_struct extends Thread{
 						
 						send_response_msg(dos, base64_Encoder, lso, Server_ClientList());
 					}else if(slice_msg[1].equals("Quit")) { //command "Quit"
-						
 						send_response_msg(dos, base64_Encoder, lso, Server_Quit());
-						new Thread() { //Client와 Server의 독립적인 Clients 관리를 해결
-							public void run() { //Timeout Interval 이후에 오지 않은경우(Client에서 값을 받아서 Quit이 이루어진 경우)에 Server에서도 Quit을 진행
-								
-								LocalTime Send_Time = LocalTime.now();
-								boolean client_terminate = true;
-								while(client_terminate) {
-									LocalTime Now_Time = LocalTime.now();
-									Duration Interval = Duration.between(Send_Time, Now_Time);
-									if(Interval.getNano() > 1000000000) { //Timeout Interval 0.5 second
-										client_terminate = false;
-										client_remove();
-									}
-								}
-							}
-						}.start();
 					}else {
 						send_response_msg(dos, base64_Encoder, lso, Server_Error());
 					}
 				}
 			}
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
 			System.out.println("Client Quit >>> "+socket.getInetAddress());
 		}
 	}
@@ -162,15 +154,14 @@ public class Client_struct extends Thread{
 	public void client_remove() { //해당 클라이언트 삭제
 		
 		for (int i=0;i<clients.size();i++) {
-		
-			int clients_id = clients.get(i).client_id;
-			if(clients_id > client_id) { //해당 client_id보다 높은 값들 찾기
+			System.out.println("this.client_id "+this.client_id);
+			System.out.println("clients.get(i).client_id "+clients.get(i).client_id);
+			if(this.client_id < clients.get(i).client_id) { //해당 client_id보다 높은 값들 찾기
 				clients.get(i).client_id_set(); //높은경우 pop이후에 index조정이 필요하므로 값 변경
 			}
 		}
-		System.out.println(clients.size());
-		clients.remove(client_id);
-		this.Quit = true;
+		clients.remove(this.client_id);
+		System.out.println("clients.size() "+clients.size());
 	}
 	
 	public void client_id_set() { //remove하게될 경우 해당 client_id보다 높은 값들 -1

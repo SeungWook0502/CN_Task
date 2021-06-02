@@ -29,6 +29,7 @@ public class Server_main {
 				Client_struct client = new Client_struct(socket, server.clients, cnt_time, server.clients.size()); //create client thread
 				server.clients.add(client); //add client object in client list
 				client.start();
+				
 			}
 		
 		}catch(SocketException e) {
