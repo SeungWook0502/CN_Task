@@ -13,6 +13,7 @@ public class Server_main {
 	
 	ServerSocket ss = null;
 	ArrayList<Client_struct> clients = new ArrayList<Client_struct>();
+	public static int Loss_Ratio = 1; //loss percent
 
 	public static void main(String[] args) {
 		

@@ -39,19 +39,17 @@ public class Client_struct extends Thread{
 			while(true) {
 				String Request_msg="";
 				try {
+					Server_main.Loss_Ratio++;
 					Request_msg = dis.readUTF(); //Data read
 				}catch (EOFException eof) { //Quit Client
 					client_remove();
 					break;
 				}
-//				System.out.println("=============================================================");
-//				System.out.println("Base64 Request message - "+Request_msg); //Base64 Request message check
 				Base64_Encoder base64_Encoder = new Base64_Encoder();
 				Base64_Decoder base64_Decoder = new Base64_Decoder();
 				Request_msg = base64_Decoder.Base64_Decoding(Request_msg);
 				
 				String[] slice_msg = Request_msg.split("///");
-//				System.out.println("Server's receive message - "+Request_msg); //message form check
 				if(slice_msg[0].equals("Request") && slice_msg.length==5) { //message type & message form check
 					
 					Loss_Simulator_Object lso = new Loss_Simulator_Object();
@@ -92,7 +90,10 @@ public class Client_struct extends Thread{
 				+value_sttNum_array[1]+"///"
 				+"END_MSG"; //message form
 		
-		lso.loss_send(dos,base64_Encoder.Base64_Encoding(Response_msg)); //String to byte //Base64Encoding //Send Request message
+		if((Server_main.Loss_Ratio/10+1)==10) {
+			Server_main.Loss_Ratio--;
+		}
+		lso.loss_send(dos,base64_Encoder.Base64_Encoding(Response_msg),Server_main.Loss_Ratio/10+1); //String to byte //Base64Encoding //Send Request message
 	}
 	
 	public void Server_ACK(DataOutputStream dos, Base64_Encoder base64_Encoder, Loss_Simulator_Object lso, String Num_Req) { //ACK
@@ -101,8 +102,10 @@ public class Client_struct extends Thread{
 				+"Num_ACK"+Num_Req+"///"
 				+"END_MSG";
 		
-//		System.out.println("Server's ACK Message - "+ACK_msg); //Server ACK message check
-		lso.loss_send(dos, base64_Encoder.Base64_Encoding(ACK_msg));
+		if((Server_main.Loss_Ratio/10+1)==10) {
+			Server_main.Loss_Ratio--;
+		}
+		lso.loss_send(dos, base64_Encoder.Base64_Encoding(ACK_msg),Server_main.Loss_Ratio/10+1);
 	}
 	
 	public String[] Server_Hi(String CID) { //Hi
@@ -154,24 +157,21 @@ public class Client_struct extends Thread{
 	public void client_remove() { //해당 클라이언트 삭제
 		
 		for (int i=0;i<clients.size();i++) {
-			System.out.println("this.client_id "+this.client_id);
-			System.out.println("clients.get(i).client_id "+clients.get(i).client_id);
 			if(this.client_id < clients.get(i).client_id) { //해당 client_id보다 높은 값들 찾기
 				clients.get(i).client_id_set(); //높은경우 pop이후에 index조정이 필요하므로 값 변경
 			}
 		}
 		clients.remove(this.client_id);
-		System.out.println("clients.size() "+clients.size());
 	}
 	
 	public void client_id_set() { //remove하게될 경우 해당 client_id보다 높은 값들 -1
 		this.client_id = --client_id;
 	}
 	
-	public String[] Server_Error() {
+	public String[] Server_Error() { //Command Error
 		String[] Response_msg = {"",""};
 		Response_msg[0] = "300";
-		Response_msg[1] = "Command Error";
+		Response_msg[1] = "명령어 종류 & 명령어 설명\nHi\t\t=>  서버에게 자신의 아이디를 저장해달라는 요청\nCurrentTime\t=>  서버에게 현재시간을 요청\nConnectionTime\t=>  메시지를 보내고 있는 이 클라이언트와의 TCP 연결 유지 시간을 요청\nClientList\t=>  현재 서버에 연결된 모든 클라이언트의 IP주소와 CID를 요청\nQuit\t\t=>  서버와의 연결을 종료하기를 요청";
 		return Response_msg;
 	}
 }

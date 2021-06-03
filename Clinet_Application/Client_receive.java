@@ -25,9 +25,9 @@ public class Client_receive extends Thread{
 			dos = new DataOutputStream(socket.getOutputStream());
 			Loss_Simulator_Object lso = new Loss_Simulator_Object();
 			
-			while(!Client_main.Quit) {
+//			while(!Client_main.Quit) {
+			for(int Client_Receive_Count=0; Client_Receive_Count<10; Client_Receive_Count++) {
 				String Response_msg = dis.readUTF(); //Receive message
-//				System.out.println("Base64 Response Message - "+Response_msg); //Base64 Response message check
 				Base64_Decoder base64_Decoder = new Base64_Decoder();
 				Base64_Encoder base64_Encoder = new Base64_Encoder();
 				Response_msg=base64_Decoder.Base64_Decoding(Response_msg);
@@ -35,7 +35,6 @@ public class Client_receive extends Thread{
 				if(Response_msg.split("///")[0].equals("ACK")) { //Receive ACK message
 					
 					Client_main.Receive_ACK = true;
-//					System.out.println("ACK OK"); //message form check
 				}
 				
 				else if(Response_msg.split("///")[0].equals("Response") && Client_main.Receive_ACK) { //Receive Response message
@@ -44,20 +43,22 @@ public class Client_receive extends Thread{
 					Client_main.Receive_Response = true;
 					if(Response_msg.split("///")[1].equals("200")) { ///Receive Quit message
 						for(int Client_Count = 0;Client_Count<Response_msg.split("///")[2].split("\n").length;Client_Count++) {
-							System.out.println("Server >>> "+Response_msg.split("///")[2].split("\n")[Client_Count]);
+//							System.out.println("Server >>> "+Response_msg.split("///")[2].split("\n")[Client_Count]);
 						}
 					}
 					else if(Response_msg.split("///")[1].equals("250")) { ///Receive Quit message
-						System.out.println("Server >>> "+Response_msg.split("///")[2]);
+//						System.out.println("Server >>> "+Response_msg.split("///")[2]);
 						Client_main.Quit = true; //Thread while terminate
 					}
 					else {
-						System.out.println("Server >>> "+Response_msg.split("///")[2]);
+//						System.out.println("Server >>> "+Response_msg.split("///")[2]);
 					}
 				}
 			}
+			Client_main.Quit = true; //Thread while terminate
 		} catch (IOException e) {
 			System.out.println("Client >>> 입력 예외 발생");
+			return;
 		}
 	}
 }
